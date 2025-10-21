@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Penilaian KPI</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons for modern icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS (xlsx) for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        /* Custom styles for page transitions and active states */
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .page.active {
+            display: block;
+        }
+        .nav-link.active {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: white;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; /* gray-100 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* gray-400 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* gray-500 */
+        }
+        /* Style for toast notification */
+        #toast-notification {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-full z-50">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="flex items-center justify-center h-screen bg-gray-200">
+        <div class="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
+            <div class="flex justify-center mb-6">
+                 <i data-lucide="target" class="w-16 h-16 text-blue-500"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Login ke Dasbor KPI</h2>
+            <p class="text-center text-gray-500 mb-6">Silakan masukkan kredensial Anda.</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center mb-4 hidden"></p>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="hidden">
+        <div class="flex h-screen">
+            <!-- Sidebar Navigation -->
+            <nav class="w-64 bg-gray-800 text-white flex flex-col fixed h-full">
+                <div class="p-4 border-b border-gray-700 flex items-center">
+                    <i data-lucide="target" class="w-8 h-8 mr-3 text-blue-400"></i>
+                    <h1 class="text-xl font-bold">KPI Netop Access</h1>
+                </div>
+                <ul class="flex-grow">
+                    <li><a href="#" class="nav-link flex items-center p-4 hover:bg-gray-700 transition-colors" onclick="window.app.showPage('dashboard')"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>Dashboard Utama</a></li>
+                    <li><a href="#" class="nav-link flex items-center p-4 hover:bg-gray-700 transition-colors" onclick="window.app.showPage('karyawan')"><i data-lucide="users" class="w-5 h-5 mr-3"></i>Data Karyawan</a></li>
+                    <li><a href="#" class="nav-link flex items-center p-4 hover:bg-gray-700 transition-colors" onclick="window.app.showPage('penilaian')"><i data-lucide="file-check" class="w-5 h-5 mr-3"></i>Form Penilaian</a></li>
+                    <li><a href="#" class="nav-link flex items-center p-4 hover:bg-gray-700 transition-colors" onclick="window.app.showPage('evaluasi')"><i data-lucide="user-check" class="w-5 h-5 mr-3"></i>Evaluasi Diri</a></li>
+                </ul>
+                <div class="p-4 border-t border-gray-700">
+                    <a href="#" id="logout-btn" class="flex items-center text-gray-400 hover:text-white">
+                        <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="flex-1 ml-64 p-8 overflow-y-auto">
+                <!-- 1. Dashboard Utama Page -->
+                <div id="dashboard" class="page">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard Utama</h2>
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Total Karyawan</p>
+                                <p id="total-karyawan" class="text-3xl font-bold text-gray-800">0</p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i data-lucide="users" class="w-6 h-6 text-blue-500"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Sudah Dinilai</p>
+                                <p id="sudah-dinilai" class="text-3xl font-bold text-gray-800">0</p>
+                            </div>
+                             <div class="bg-green-100 p-3 rounded-full">
+                                <i data-lucide="user-check" class="w-6 h-6 text-green-500"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Belum Dinilai</p>
+                                <p id="belum-dinilai" class="text-3xl font-bold text-gray-800">0</p>
+                            </div>
+                             <div class="bg-yellow-100 p-3 rounded-full">
+                                <i data-lucide="user-x" class="w-6 h-6 text-yellow-500"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Performa Rata-rata</p>
+                                <p id="performa-rata2" class="text-3xl font-bold text-gray-800">0.0</p>
+                            </div>
+                             <div class="bg-indigo-100 p-3 rounded-full">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-indigo-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-gray-700 mb-4">Distribusi Skor Kinerja</h3>
+                            <div class="relative h-80">
+                                <canvas id="kinerjaChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-gray-700 mb-4">Penyelesaian KPI per Departemen</h3>
+                            <div class="relative h-80">
+                                <canvas id="departemenChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Data Karyawan Page -->
+                <div id="karyawan" class="page">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Data Karyawan</h2>
+                    
+                    <!-- Filter and Export Section -->
+                    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label for="start-date" class="block text-sm font-medium text-gray-700">Dari Tanggal Penilaian</label>
+                                <input type="date" id="start-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                                <input type="date" id="end-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="filter-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 w-full flex items-center justify-center"><i data-lucide="filter" class="w-4 h-4 mr-2"></i>Filter</button>
+                                <button id="reset-filter-btn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 w-full flex items-center justify-center"><i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i>Reset</button>
+                            </div>
+                            <div>
+                                 <button id="export-excel-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 w-full flex items-center justify-center">
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i>Export ke Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Container for Add Sample Data Button -->
+                    <div id="sample-data-container" class="mb-6 text-center hidden bg-white p-6 rounded-lg shadow-md border-2 border-dashed">
+                        <p class="text-gray-600 mb-4">Database Anda kosong. Mulai dengan menambahkan karyawan baru atau muat data contoh untuk demonstrasi.</p>
+                        <button id="add-sample-data-btn" class="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 flex items-center mx-auto">
+                            <i data-lucide="database" class="w-5 h-5 mr-2"></i> Tambahkan Data Contoh
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <input id="search-karyawan-input" type="text" placeholder="Cari karyawan..." class="border rounded-md p-2 w-1/3">
+                            <button onclick="window.app.showAddKaryawanModal()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center">
+                                <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Karyawan
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-gray-100 border-b">
+                                        <th class="p-4 font-semibold">Nama</th>
+                                        <th class="p-4 font-semibold">Jabatan</th>
+                                        <th class="p-4 font-semibold">Departemen</th>
+                                        <th class="p-4 font-semibold">Branch</th>
+                                        <th class="p-4 font-semibold">Status Penilaian</th>
+                                        <th class="p-4 font-semibold text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="karyawan-table-body">
+                                    <tr><td colspan="6" class="p-4 text-center text-gray-500">Menghubungkan ke database...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                         <!-- Pagination Footer -->
+                        <div id="karyawan-table-footer" class="flex justify-between items-center mt-4 pt-4 border-t">
+                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <span>Tampilkan</span>
+                                <select id="entries-per-page" class="border rounded-md p-1">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span>entri</span>
+                            </div>
+                            <div id="pagination-info" class="text-sm text-gray-600">
+                                Menampilkan 0 sampai 0 dari 0 entri
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="prev-page-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Sebelumnya</button>
+                                <button id="next-page-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Berikutnya</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Form Penilaian Kinerja Page -->
+                <div id="penilaian" class="page">
+                     <h2 class="text-3xl font-bold text-gray-800 mb-6">Form Penilaian Kinerja</h2>
+                     <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                        <!-- Employee Info -->
+                        <div class="grid grid-cols-2 gap-6 border-b pb-6 mb-6">
+                             <div>
+                                 <label for="penilaian-pilih-karyawan-input" class="block text-sm font-medium text-gray-600">Ketik Nama Karyawan</label>
+                                 <input type="text" id="penilaian-pilih-karyawan-input" list="karyawan-list" placeholder="Ketik untuk mencari..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                 <datalist id="karyawan-list"></datalist>
+                                 <input type="hidden" id="selected-karyawan-id">
+                             </div>
+                             <div>
+                                 <p class="text-sm text-gray-600">Jabatan</p>
+                                 <p id="penilaian-jabatan" class="font-semibold text-lg text-gray-800">-</p>
+                             </div>
+                              <div>
+                                 <p class="text-sm text-gray-600">Departemen</p>
+                                 <p id="penilaian-departemen" class="font-semibold text-lg text-gray-800">-</p>
+                             </div>
+                             <div>
+                                 <label for="penilaian-tahun-select" class="block text-sm font-medium text-gray-600">Periode Penilaian</label>
+                                 <div class="flex items-center mt-1">
+                                    <span class="text-gray-700 mr-2">Akhir Tahun</span>
+                                    <select id="penilaian-tahun-select" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                                </div>
+                             </div>
+                        </div>
+
+                        <!-- KPI Items -->
+                        <div id="kpi-items-container" class="space-y-6">
+                             <div class="text-center text-gray-500 p-8 border rounded-md">
+                                 Pilih karyawan untuk menampilkan daftar penilaian.
+                             </div>
+                        </div>
+                        
+                        <!-- Summary & Comments -->
+                        <div class="mt-8 pt-6 border-t">
+                            <div class="flex justify-end items-center mb-6">
+                                <span class="text-gray-600 mr-4">Total Skor Akhir:</span>
+                                <span id="total-skor-akhir" class="text-3xl font-bold text-blue-600">0.00</span>
+                            </div>
+                            <div>
+                                 <label for="comments" class="block text-xl font-bold text-gray-700 mb-2">Catatan & Feedback Atasan</label>
+                                 <textarea id="comments" rows="4" class="w-full border border-gray-300 rounded-md p-2" placeholder="Tuliskan feedback konstruktif..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="mt-8 flex justify-end space-x-4">
+                            <button id="batal-penilaian-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Batal</button>
+                            <button id="simpan-penilaian-btn" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">Simpan Penilaian</button>
+                        </div>
+                     </div>
+                </div>
+
+                <!-- 4. Rencana Kerja & Evaluasi Diri Page -->
+                <div id="evaluasi" class="page">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Evaluasi Diri</h2>
+                     <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                         <div class="border-b pb-4 mb-6">
+                            <div class="mb-4">
+                                 <label for="evaluasi-karyawan-input" class="block text-sm font-medium text-gray-600">Pilih Karyawan untuk Evaluasi Diri</label>
+                                 <input type="text" id="evaluasi-karyawan-input" list="evaluasi-karyawan-list" placeholder="Ketik nama karyawan..." class="mt-1 block w-full max-w-sm border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                 <datalist id="evaluasi-karyawan-list"></datalist>
+                            </div>
+                             <h3 id="evaluasi-header-display" class="text-xl font-bold text-gray-800">Pilih seorang karyawan</h3>
+                             <div class="flex items-center space-x-2 text-gray-600">
+                                <span>Periode: Awal Tahun</span>
+                                <select id="evaluasi-tahun-select" class="border rounded-md p-1 text-sm"></select>
+                             </div>
+                         </div>
+                         
+                         <!-- Self Assessment Section -->
+                         <div class="space-y-6">
+                             <div>
+                                 <label for="evaluasi-refleksi" class="block text-md font-semibold text-gray-700">Refleksi Diri (Pencapaian, Tantangan, Pembelajaran)</label>
+                                 <textarea id="evaluasi-refleksi" rows="4" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan pencapaian, tantangan, dan pembelajaran Anda selama periode penilaian terakhir..."></textarea>
+                             </div>
+                             <div>
+                                 <label for="evaluasi-sop" class="block text-md font-semibold text-gray-700">Kepatuhan SOP & Safety</label>
+                                 <textarea id="evaluasi-sop" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan kepatuhan Anda terhadap SOP dan standar keselamatan kerja..."></textarea>
+                             </div>
+                             <div>
+                                 <label for="evaluasi-peralatan" class="block text-md font-semibold text-gray-700">Pemeliharaan Peralatan Kerja</label>
+                                 <textarea id="evaluasi-peralatan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan bagaimana Anda merawat dan memelihara peralatan kerja..."></textarea>
+                             </div>
+                             <div>
+                                 <label for="evaluasi-customer" class="block text-md font-semibold text-gray-700">Komunikasi dengan Customer</label>
+                                 <textarea id="evaluasi-customer" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan pendekatan komunikasi Anda dengan pelanggan..."></textarea>
+                             </div>
+                             <div>
+                                 <label for="evaluasi-dokumentasi" class="block text-md font-semibold text-gray-700">Dokumentasi Pekerjaan</label>
+                                 <textarea id="evaluasi-dokumentasi" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan bagaimana Anda mendokumentasikan pekerjaan Anda..."></textarea>
+                             </div>
+                             <div>
+                                 <label for="evaluasi-laporan" class="block text-md font-semibold text-gray-700">Laporan & Administrasi</label>
+                                 <textarea id="evaluasi-laporan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan ketepatan dan kualitas laporan serta tugas administrasi Anda..."></textarea>
+                             </div>
+                          </div>
+
+                          <!-- Actions -->
+                        <div class="mt-8 pt-6 border-t flex justify-end space-x-4">
+                            <button id="simpan-draft-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Simpan Draft</button>
+                            <button id="kirim-evaluasi-btn" class="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600">Kirim ke Atasan</button>
+                        </div>
+                     </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- MODALS SECTION -->
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 id="modal-title" class="text-lg font-bold text-gray-800 mb-4">Konfirmasi Hapus</h3>
+            <p id="modal-text" class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus data karyawan ini?</p>
+            <div class="flex justify-end space-x-4">
+                <button onclick="window.app.hideConfirmationModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Batal</button>
+                <button id="modal-confirm-btn" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Karyawan Modal -->
+    <div id="add-karyawan-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-800 mb-6">Tambah Karyawan Baru</h3>
+            <form id="add-karyawan-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                        <input type="text" id="nama" name="nama" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <input type="text" id="jabatan" name="jabatan" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
+                        <input type="text" id="departemen" name="departemen" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="branch" class="block text-sm font-medium text-gray-700">Branch</label>
+                        <input type="text" id="branch" name="branch" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="window.app.hideAddKaryawanModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Batal</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Simpan Karyawan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Karyawan Modal -->
+    <div id="edit-karyawan-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-800 mb-6">Ubah Data Karyawan</h3>
+            <form id="edit-karyawan-form">
+                <input type="hidden" id="edit-karyawan-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                        <input type="text" id="edit-nama" name="nama" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <input type="text" id="edit-jabatan" name="jabatan" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
+                        <input type="text" id="edit-departemen" name="departemen" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-branch" class="block text-sm font-medium text-gray-700">Branch</label>
+                        <input type="text" id="edit-branch" name="branch" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" onclick="window.app.hideEditKaryawanModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Batal</button>
+                    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- View Karyawan Modal -->
+    <div id="view-karyawan-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
+            <div class="flex justify-between items-center border-b pb-3 mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Detail Karyawan</h3>
+                <button onclick="window.app.hideViewKaryawanModal()" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500">Nama Lengkap</p>
+                    <p id="view-nama" class="font-semibold text-lg"></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Jabatan</p>
+                    <p id="view-jabatan" class="font-semibold text-lg"></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Departemen</p>
+                    <p id="view-departemen" class="font-semibold text-lg"></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Branch</p>
+                    <p id="view-branch" class="font-semibold text-lg"></p>
+                </div>
+                 <div>
+                    <p class="text-sm text-gray-500">Status Penilaian</p>
+                    <p id="view-status" class="font-semibold text-lg"></p>
+                </div>
+                 <div>
+                    <p class="text-sm text-gray-500">Skor Terakhir</p>
+                    <p id="view-skor" class="font-semibold text-lg"></p>
+                </div>
+                <div id="view-periode-container" class="hidden">
+                    <p class="text-sm text-gray-500">Periode Penilaian Terakhir</p>
+                    <p id="view-periode" class="font-semibold text-lg"></p>
+                </div>
+                <div id="view-catatan-container" class="hidden">
+                    <p class="text-sm text-gray-500">Catatan / Feedback</p>
+                    <p id="view-catatan" class="text-gray-700 italic border-l-4 pl-4 bg-gray-50 py-2"></p>
+                </div>
+            </div>
+             <div class="flex justify-end mt-8 space-x-4">
+                <button id="whatsapp-share-btn" class="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 flex items-center transition-opacity">
+                    <i data-lucide="send" class="w-4 h-4 mr-2"></i> Kirim via WhatsApp
+                </button>
+                <button onclick="window.app.hideViewKaryawanModal()" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Modal -->
+    <div id="whatsapp-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 id="whatsapp-modal-title" class="text-lg font-bold text-gray-800 mb-4">Kirim via WhatsApp</h3>
+            <form id="whatsapp-form">
+                <div>
+                    <label for="whatsapp-phone-input" class="block text-sm font-medium text-gray-700">Nomor WhatsApp Tujuan</label>
+                    <input type="tel" id="whatsapp-phone-input" placeholder="Contoh: 6281234567890" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="window.app.hideWhatsappModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Batal</button>
+                    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Kirim</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, deleteDoc, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Global State & App Namespace ---
+        let karyawanData = [];
+        let userId;
+        let kinerjaChartInstance, departemenChartInstance;
+        let currentPage = 1;
+        let entriesPerPage = 10;
+        let firestoreUnsubscribe = null;
+        window.app = {}; // Create a global object for functions callable from HTML
+        let confirmCallback = null;
+        let currentlyViewedKaryawanId = null;
+        let currentlySelectedEvaluasiKaryawanId = null;
+        let whatsappMessageType = null; // 'penilaian' or 'evaluasi'
+
+        // --- Firebase Setup ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOxetQYZfH3BpuFX-YvKjJ0z12bKa7gY8",
+            authDomain: "evaluasi-kpi.firebaseapp.com",
+            projectId: "evaluasi-kpi",
+            storageBucket: "evaluasi-kpi.firebasestorage.app",
+            messagingSenderId: "784732068997",
+            appId: "1:784732068997:web:12903ce6bc78e309cc1dec",
+            measurementId: "G-E9BZ4M3MJR"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'evaluasi-kpi-default';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- UI Element Refs ---
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const toastEl = document.getElementById('toast-notification');
+        const toastMsg = document.getElementById('toast-message');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const addKaryawanModal = document.getElementById('add-karyawan-modal');
+        const editKaryawanModal = document.getElementById('edit-karyawan-modal');
+        const viewKaryawanModal = document.getElementById('view-karyawan-modal');
+        const addKaryawanForm = document.getElementById('add-karyawan-form');
+        const editKaryawanForm = document.getElementById('edit-karyawan-form');
+        const searchInput = document.getElementById('search-karyawan-input');
+        const entriesPerPageSelect = document.getElementById('entries-per-page');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const penilaianKaryawanInput = document.getElementById('penilaian-pilih-karyawan-input');
+        const karyawanDatalist = document.getElementById('karyawan-list');
+        const selectedKaryawanIdInput = document.getElementById('selected-karyawan-id');
+        const penilaianJabatan = document.getElementById('penilaian-jabatan');
+        const penilaianDepartemen = document.getElementById('penilaian-departemen');
+        const kpiItemsContainer = document.getElementById('kpi-items-container');
+        const simpanPenilaianBtn = document.getElementById('simpan-penilaian-btn');
+        const batalPenilaianBtn = document.getElementById('batal-penilaian-btn');
+        const totalSkorAkhirEl = document.getElementById('total-skor-akhir');
+        const whatsappModal = document.getElementById('whatsapp-modal');
+        const whatsappModalTitle = document.getElementById('whatsapp-modal-title');
+        const whatsappForm = document.getElementById('whatsapp-form');
+        const evaluasiKaryawanInput = document.getElementById('evaluasi-karyawan-input');
+        const evaluasiKaryawanList = document.getElementById('evaluasi-karyawan-list');
+        const evaluasiHeaderDisplay = document.getElementById('evaluasi-header-display');
+        const simpanDraftBtn = document.getElementById('simpan-draft-btn');
+        const kirimEvaluasiBtn = document.getElementById('kirim-evaluasi-btn');
+        const penilaianTahunSelect = document.getElementById('penilaian-tahun-select');
+        const evaluasiTahunSelect = document.getElementById('evaluasi-tahun-select');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const filterBtn = document.getElementById('filter-btn');
+        const resetFilterBtn = document.getElementById('reset-filter-btn');
+        const exportExcelBtn = document.getElementById('export-excel-btn');
+
+
+        // --- Page Navigation Logic ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelector(`.nav-link[onclick="window.app.showPage('${pageId}')"]`).classList.add('active');
+        }
+        window.app.showPage = showPage;
+
+        // --- Toast Notification Logic ---
+        function showToast(message, type = 'success') {
+            toastMsg.textContent = message;
+            toastEl.classList.remove('bg-green-500', 'bg-red-500');
+            toastEl.classList.add(type === 'error' ? 'bg-red-500' : 'bg-green-500');
+            toastEl.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toastEl.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // --- Confirmation Modal Logic ---
+        function showConfirmationModal(callback) {
+            confirmCallback = callback;
+            confirmationModal.classList.remove('hidden');
+        }
+        function hideConfirmationModal() {
+            confirmationModal.classList.add('hidden');
+        }
+        window.app.hideConfirmationModal = hideConfirmationModal;
+        modalConfirmBtn.addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            hideConfirmationModal();
+        });
+
+        // --- WhatsApp Modal Logic ---
+        function showWhatsappModal(type) {
+            whatsappMessageType = type;
+            whatsappForm.reset();
+            whatsappModalTitle.textContent = type === 'penilaian' ? 'Kirim Hasil via WhatsApp' : 'Kirim Evaluasi Diri ke Atasan';
+            document.querySelector('#whatsapp-form label').textContent = type === 'penilaian' ? 'Nomor WhatsApp Karyawan' : 'Nomor WhatsApp Atasan';
+            whatsappModal.classList.remove('hidden');
+        }
+        function hideWhatsappModal() {
+            whatsappModal.classList.add('hidden');
+        }
+        window.app.hideWhatsappModal = hideWhatsappModal;
+
+        // --- Add/Edit/View Karyawan Modal Logic ---
+        function showAddKaryawanModal() { addKaryawanForm.reset(); addKaryawanModal.classList.remove('hidden'); }
+        function hideAddKaryawanModal() { addKaryawanModal.classList.add('hidden'); }
+        window.app.showAddKaryawanModal = showAddKaryawanModal;
+        window.app.hideAddKaryawanModal = hideAddKaryawanModal;
+
+        function showEditKaryawanModal(id) {
+            const karyawan = karyawanData.find(k => k.id === id);
+            if (!karyawan) return;
+            document.getElementById('edit-karyawan-id').value = id;
+            document.getElementById('edit-nama').value = karyawan.nama;
+            document.getElementById('edit-jabatan').value = karyawan.jabatan;
+            document.getElementById('edit-departemen').value = karyawan.departemen;
+            document.getElementById('edit-branch').value = karyawan.branch;
+            editKaryawanModal.classList.remove('hidden');
+        }
+        function hideEditKaryawanModal() { editKaryawanModal.classList.add('hidden'); }
+        window.app.showEditKaryawanModal = showEditKaryawanModal;
+        window.app.hideEditKaryawanModal = hideEditKaryawanModal;
+
+        function showViewKaryawanModal(id) {
+            currentlyViewedKaryawanId = id;
+            const karyawan = karyawanData.find(k => k.id === id);
+            if (!karyawan) return;
+            document.getElementById('view-nama').textContent = karyawan.nama;
+            document.getElementById('view-jabatan').textContent = karyawan.jabatan;
+            document.getElementById('view-departemen').textContent = karyawan.departemen;
+            document.getElementById('view-branch').textContent = karyawan.branch || 'N/A';
+            document.getElementById('view-status').textContent = karyawan.status;
+            document.getElementById('view-skor').textContent = karyawan.skor > 0 ? karyawan.skor.toFixed(2) : 'Belum Dinilai';
+
+            const viewPeriodeContainer = document.getElementById('view-periode-container');
+            const viewPeriode = document.getElementById('view-periode');
+            if (karyawan.periode) {
+                viewPeriode.textContent = karyawan.periode;
+                viewPeriodeContainer.classList.remove('hidden');
+            } else {
+                 viewPeriodeContainer.classList.add('hidden');
+            }
+
+            const viewCatatanContainer = document.getElementById('view-catatan-container');
+            const viewCatatan = document.getElementById('view-catatan');
+            if (karyawan.catatan) {
+                viewCatatan.textContent = karyawan.catatan;
+                viewCatatanContainer.classList.remove('hidden');
+            } else {
+                 viewCatatanContainer.classList.add('hidden');
+            }
+
+            const whatsappBtn = document.getElementById('whatsapp-share-btn');
+            if (karyawan.status === 'Sudah Dinilai') {
+                whatsappBtn.disabled = false;
+                whatsappBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                whatsappBtn.title = 'Kirim hasil penilaian via WhatsApp';
+            } else {
+                whatsappBtn.disabled = true;
+                whatsappBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                whatsappBtn.title = 'Karyawan ini belum dinilai. Silakan lakukan penilaian terlebih dahulu.';
+            }
+            
+            viewKaryawanModal.classList.remove('hidden');
+        }
+        function hideViewKaryawanModal() {
+            viewKaryawanModal.classList.add('hidden');
+            currentlyViewedKaryawanId = null;
+        }
+        window.app.showViewKaryawanModal = showViewKaryawanModal;
+        window.app.hideViewKaryawanModal = hideViewKaryawanModal;
+
+        // --- Form Submissions ---
+        addKaryawanForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newKaryawan = {
+                nama: e.target.nama.value,
+                jabatan: e.target.jabatan.value,
+                departemen: e.target.departemen.value,
+                branch: e.target.branch.value,
+                status: 'Belum Dinilai',
+                skor: 0
+            };
+            await addKaryawan(newKaryawan);
+            hideAddKaryawanModal();
+        });
+
+        editKaryawanForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-karyawan-id').value;
+            const updatedData = {
+                nama: document.getElementById('edit-nama').value,
+                jabatan: document.getElementById('edit-jabatan').value,
+                departemen: document.getElementById('edit-departemen').value,
+                branch: document.getElementById('edit-branch').value,
+            };
+            await updateKaryawan(id, updatedData);
+            hideEditKaryawanModal();
+        });
+        
+        // --- Form Penilaian Logic ---
+        penilaianKaryawanInput.addEventListener('input', (e) => {
+            const enteredName = e.target.value;
+            const selectedKaryawan = karyawanData.find(k => k.nama === enteredName);
+            if (selectedKaryawan) {
+                selectedKaryawanIdInput.value = selectedKaryawan.id;
+                penilaianJabatan.textContent = selectedKaryawan.jabatan;
+                penilaianDepartemen.textContent = selectedKaryawan.departemen;
+                renderKpiItemsForEmployee(selectedKaryawan);
+                calculateAndDisplayTotalScore();
+                simpanPenilaianBtn.textContent = selectedKaryawan.status === 'Sudah Dinilai' ? 'Perbarui Penilaian' : 'Simpan Penilaian';
+                document.getElementById('comments').value = selectedKaryawan.catatan || '';
+                
+                if (selectedKaryawan.periode && selectedKaryawan.periode.includes('Akhir Tahun ')) {
+                    const year = selectedKaryawan.periode.split(' ')[2];
+                    penilaianTahunSelect.value = year;
+                } else {
+                    penilaianTahunSelect.value = new Date().getFullYear();
+                }
+
+            } else {
+                resetPenilaianForm(false);
+            }
+        });
+
+        kpiItemsContainer.addEventListener('input', (e) => {
+            if (e.target.classList.contains('kpi-score-input') || e.target.classList.contains('attitude-score-input')) {
+                calculateAndDisplayTotalScore();
+            }
+        });
+
+        simpanPenilaianBtn.addEventListener('click', async () => {
+            const karyawanId = selectedKaryawanIdInput.value;
+            if (!karyawanId) {
+                showToast("Pilih seorang karyawan terlebih dahulu.", "error");
+                return;
+            }
+            const finalScore = parseFloat(totalSkorAkhirEl.textContent);
+            const comments = document.getElementById('comments').value;
+            const selectedYear = penilaianTahunSelect.value;
+            const periode = `Akhir Tahun ${selectedYear}`;
+
+            if (!periode.trim()) {
+                showToast("Periode penilaian tidak boleh kosong.", "error");
+                return;
+            }
+            const kpiScores = {};
+            kpiItemsContainer.querySelectorAll('.kpi-score-input').forEach(input => { kpiScores[input.dataset.id] = parseFloat(input.value); });
+            const attitudeScores = {};
+            kpiItemsContainer.querySelectorAll('.attitude-score-input').forEach(input => { attitudeScores[input.dataset.id] = parseFloat(input.value); });
+            const updatedData = {
+                status: 'Sudah Dinilai',
+                skor: finalScore,
+                catatan: comments,
+                periode: periode,
+                tanggalPenilaian: new Date().toISOString(),
+                penilaianDetail: { kpiScores, attitudeScores }
+            };
+            await updateKaryawan(karyawanId, updatedData);
+            const isUpdate = simpanPenilaianBtn.textContent.includes('Perbarui');
+            showToast(isUpdate ? "Penilaian berhasil diperbarui." : "Penilaian berhasil disimpan.", "success");
+            resetPenilaianForm();
+        });
+
+        batalPenilaianBtn.addEventListener('click', () => resetPenilaianForm());
+
+        function resetPenilaianForm(clearInput = true) {
+            if(clearInput) { penilaianKaryawanInput.value = ''; }
+            selectedKaryawanIdInput.value = '';
+            penilaianJabatan.textContent = '-';
+            penilaianDepartemen.textContent = '-';
+            kpiItemsContainer.innerHTML = `<div class="text-center text-gray-500 p-8 border rounded-md">Pilih karyawan untuk menampilkan daftar penilaian.</div>`;
+            totalSkorAkhirEl.textContent = '0.00';
+            document.getElementById('comments').value = '';
+            penilaianTahunSelect.value = new Date().getFullYear();
+            simpanPenilaianBtn.textContent = 'Simpan Penilaian';
+        }
+
+        function calculateAndDisplayTotalScore() {
+            const kpiScoreInputs = kpiItemsContainer.querySelectorAll('.kpi-score-input');
+            const attitudeScoreInputs = kpiItemsContainer.querySelectorAll('.attitude-score-input');
+            if (kpiScoreInputs.length === 0 && attitudeScoreInputs.length === 0) {
+                totalSkorAkhirEl.textContent = '0.00'; return;
+            }
+            const kpiCategoryWeight = 0.7;
+            const attitudeCategoryWeight = 0.3;
+            let totalWeightedKpiScore = 0;
+            kpiScoreInputs.forEach(input => { totalWeightedKpiScore += parseFloat(input.value) * parseFloat(input.dataset.bobot); });
+            let totalWeightedAttitudeScore = 0;
+            attitudeScoreInputs.forEach(input => { totalWeightedAttitudeScore += parseFloat(input.value) * parseFloat(input.dataset.bobot); });
+            const finalScore = (totalWeightedKpiScore * kpiCategoryWeight) + (totalWeightedAttitudeScore * attitudeCategoryWeight);
+            totalSkorAkhirEl.textContent = finalScore.toFixed(2);
+        }
+
+        // --- Pagination and Search Logic ---
+        entriesPerPageSelect.addEventListener('change', (e) => { entriesPerPage = parseInt(e.target.value, 10); currentPage = 1; renderKaryawanTable(); });
+        prevPageBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderKaryawanTable(); } });
+        nextPageBtn.addEventListener('click', () => {
+            const filteredData = getFilteredData();
+            const totalPages = Math.ceil(filteredData.length / entriesPerPage);
+            if (currentPage < totalPages) { currentPage++; renderKaryawanTable(); }
+        });
+        searchInput.addEventListener('input', () => { currentPage = 1; renderKaryawanTable(); });
+
+        function getFilteredData() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+
+            let filtered = karyawanData;
+
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(k =>
+                    k.nama.toLowerCase().includes(searchTerm) ||
+                    k.jabatan.toLowerCase().includes(searchTerm) ||
+                    k.departemen.toLowerCase().includes(searchTerm) ||
+                    (k.branch && k.branch.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Filter by date range
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999); // Make end date inclusive
+
+                filtered = filtered.filter(k => {
+                    if (!k.tanggalPenilaian) return false; // Only include rated employees
+                    const penilaianDate = new Date(k.tanggalPenilaian);
+                    return penilaianDate >= start && penilaianDate <= end;
+                });
+            }
+
+            return filtered;
+        }
+
+        // --- Firestore Data Operations ---
+        async function setupFirestoreListener(uid) {
+            if (firestoreUnsubscribe) { firestoreUnsubscribe(); }
+            const karyawanCollectionPath = `/artifacts/${appId}/users/${uid}/karyawan`;
+            const karyawanCol = collection(db, karyawanCollectionPath);
+            firestoreUnsubscribe = onSnapshot(karyawanCol, (snapshot) => {
+                karyawanData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderDashboard();
+                renderKaryawanTable();
+                renderPenilaianForm();
+                renderEvaluasiDiriPage();
+            }, (error) => {
+                console.error("Error listening to collection:", error);
+                const tableBody = document.getElementById('karyawan-table-body');
+                if(tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600 font-semibold">Gagal memuat data. <br><span class="text-sm font-normal text-gray-600">Pastikan aturan keamanan Firestore valid. (Error: ${error.code})</span></td></tr>`; }
+                document.getElementById('total-karyawan').textContent = 'N/A';
+                document.getElementById('sudah-dinilai').textContent = 'N/A';
+                document.getElementById('belum-dinilai').textContent = 'N/A';
+                document.getElementById('performa-rata2').textContent = 'N/A';
+            });
+        }
+        
+        async function deleteKaryawan(karyawanId) {
+            showConfirmationModal(async () => {
+                if (!userId) return;
+                const docPath = `/artifacts/${appId}/users/${userId}/karyawan/${karyawanId}`;
+                await deleteDoc(doc(db, docPath));
+            });
+        }
+        window.app.deleteKaryawan = deleteKaryawan;
+        
+        async function addKaryawan(data) {
+            if (!userId) return;
+            const karyawanCollectionPath = `/artifacts/${appId}/users/${userId}/karyawan`;
+            await addDoc(collection(db, karyawanCollectionPath), data);
+        }
+        
+        async function updateKaryawan(id, data) {
+            if (!userId) return;
+            const docPath = `/artifacts/${appId}/users/${userId}/karyawan/${id}`;
+            await updateDoc(doc(db, docPath), data, { merge: true });
+        }
+        
+        async function addSampleData(uid) {
+            const sampleData = [
+                { nama: 'Budi Santoso', jabatan: 'UI/UX Designer', departemen: 'Teknologi', branch: 'Jakarta', status: 'Sudah Dinilai', skor: 4.55, periode: 'Akhir Tahun 2024', catatan: 'Desain yang dihasilkan sangat memuaskan dan melebihi ekspektasi.' },
+                { nama: 'Citra Lestari', jabatan: 'Frontend Developer', departemen: 'Teknologi', branch: 'Bandung', status: 'Sudah Dinilai', skor: 4.20, periode: 'Akhir Tahun 2024', catatan: 'Pengerjaan cepat dan kode yang dihasilkan bersih.' },
+                { nama: 'Doni Firmansyah', jabatan: 'Backend Developer', departemen: 'Teknologi', branch: 'Jakarta', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Eka Wijayanti', jabatan: 'Product Manager', departemen: 'Produk', branch: 'Surabaya', status: 'Sudah Dinilai', skor: 4.80, periode: 'Akhir Tahun 2024', catatan: 'Sangat baik dalam mengelola prioritas dan komunikasi tim.' },
+                { nama: 'Fitri Handayani', jabatan: 'Marketing Specialist', departemen: 'Marketing', branch: 'Bandung', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Gita Permata', jabatan: 'Content Creator', departemen: 'Marketing', branch: 'Jakarta', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Hendra Gunawan', jabatan: 'HR Generalist', departemen: 'HR', branch: 'Surabaya', status: 'Belum Dinilai', skor: 0 },
+            ];
+            const karyawanCollectionPath = `/artifacts/${appId}/users/${uid}/karyawan`;
+            for (const data of sampleData) { await addDoc(collection(db, karyawanCollectionPath), data); }
+        }
+
+        // --- Rendering Logic ---
+        function renderDashboard() {
+            const totalKaryawan = karyawanData.length;
+            const sudahDinilai = karyawanData.filter(k => k.status === 'Sudah Dinilai').length;
+            const belumDinilai = totalKaryawan - sudahDinilai;
+            const dinilaiData = karyawanData.filter(k => k.skor > 0);
+            const totalSkor = dinilaiData.reduce((acc, curr) => acc + (curr.skor || 0), 0);
+            const performaRata2 = dinilaiData.length > 0 ? (totalSkor / dinilaiData.length).toFixed(2) : '0.0';
+            document.getElementById('total-karyawan').textContent = totalKaryawan;
+            document.getElementById('sudah-dinilai').textContent = sudahDinilai;
+            document.getElementById('belum-dinilai').textContent = belumDinilai;
+            document.getElementById('performa-rata2').textContent = performaRata2;
+            renderKinerjaChart();
+            renderDepartemenChart();
+        }
+
+        function renderKinerjaChart() {
+            const ctx = document.getElementById('kinerjaChart').getContext('2d');
+            const scores = karyawanData.filter(k => k.skor > 0).map(k => k.skor);
+            const scoreDistribution = {
+                'Kurang (1-2)': scores.filter(s => s >= 1 && s < 2).length,
+                'Cukup (2-3)': scores.filter(s => s >= 2 && s < 3).length,
+                'Baik (3-4)': scores.filter(s => s >= 3 && s < 4).length,
+                'Sangat Baik (4-5)': scores.filter(s => s >= 4 && s <= 5).length,
+            };
+            if (kinerjaChartInstance) kinerjaChartInstance.destroy();
+            kinerjaChartInstance = new Chart(ctx, {
+                type: 'doughnut', data: { labels: Object.keys(scoreDistribution), datasets: [{ data: Object.values(scoreDistribution), backgroundColor: ['#ef4444', '#f97316', '#84cc16', '#22c55e'] }] }, options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderDepartemenChart() {
+            const ctx = document.getElementById('departemenChart').getContext('2d');
+            const departemenData = {};
+            karyawanData.forEach(k => {
+                if (!departemenData[k.departemen]) { departemenData[k.departemen] = { totalSkor: 0, count: 0 }; }
+                if (k.skor > 0) { departemenData[k.departemen].totalSkor += k.skor; departemenData[k.departemen].count++; }
+            });
+            const labels = [...new Set(karyawanData.map(k => k.departemen))];
+            const data = labels.map(dep => { const info = departemenData[dep]; return (info && info.count > 0) ? (info.totalSkor / info.count) : 0; });
+            if (departemenChartInstance) departemenChartInstance.destroy();
+            departemenChartInstance = new Chart(ctx, {
+                type: 'bar', data: { labels: labels, datasets: [{ label: 'Skor Rata-rata', data: data, backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'] }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderPenilaianForm() {
+            if (!karyawanDatalist) return;
+            karyawanDatalist.innerHTML = '';
+            karyawanData.forEach(k => { const option = document.createElement('option'); option.value = k.nama; karyawanDatalist.appendChild(option); });
+            const currentInputValue = penilaianKaryawanInput.value;
+            if (currentInputValue) { if (!karyawanData.some(k => k.nama === currentInputValue)) { resetPenilaianForm(); } }
+        }
+
+        function renderEvaluasiDiriPage() {
+            if (!evaluasiKaryawanList) return;
+            evaluasiKaryawanList.innerHTML = '';
+            karyawanData.forEach(k => {
+                const option = document.createElement('option');
+                option.value = k.nama;
+                evaluasiKaryawanList.appendChild(option);
+            });
+        }
+
+        function renderKpiItemsForEmployee(employee) {
+            const kpiTemplates = {
+                'UI/UX Designer': [
+                    { id: 'kpi_1', name: 'Kualitas Desain Antarmuka Pengguna (UI)', target: 'Mencapai skor kepuasan pengguna rata-rata 4.5 dari 5.', bobot: '35%' }, { id: 'kpi_2', name: 'Efisiensi Proses Desain', target: 'Mengurangi waktu iterasi desain sebesar 15%.', bobot: '30%' }, { id: 'kpi_3', name: 'Kolaborasi Tim', target: 'Mendapat feedback positif dari 90% anggota tim product & engineering.', bobot: '20%' }, { id: 'kpi_4', name: 'Inisiatif & Inovasi', target: 'Mengusulkan 2 ide perbaikan produk yang diimplementasikan.', bobot: '15%' },
+                ], 'Default': [
+                    { id: 'kpi_1', name: 'Penyelesaian Tugas Tepat Waktu', target: 'Menyelesaikan 95% tugas sesuai deadline.', bobot: '40%' }, { id: 'kpi_2', name: 'Kualitas Kerja', target: 'Tidak ada kesalahan mayor dalam hasil kerja.', bobot: '40%' }, { id: 'kpi_3', name: 'Kehadiran', target: 'Kehadiran di atas 98%', bobot: '20%' },
+                ]
+            };
+            const attitudeKpis = [
+                { id: 'att_1', name: 'Inisiatif & Proaktif', target: 'Menunjukkan inisiatif dalam menyelesaikan masalah.', bobot: '33.3%' }, { id: 'att_2', name: 'Kerja Sama Tim', target: 'Berkolaborasi secara efektif dengan rekan kerja.', bobot: '33.3%' }, { id: 'att_3', name: 'Disiplin & Tanggung Jawab', target: 'Menunjukkan disiplin tinggi terhadap waktu dan pekerjaan.', bobot: '33.4%' },
+            ];
+            const kpis = kpiTemplates[employee.jabatan] || kpiTemplates['Default'];
+            const savedScores = employee.penilaianDetail || { kpiScores: {}, attitudeScores: {} };
+            let kpiHtml = `<h3 class="text-xl font-bold text-gray-700">Indikator Kinerja Utama (KPI) - Bobot 70%</h3>`;
+            kpis.forEach(kpi => {
+                const savedValue = savedScores.kpiScores[kpi.id] || 3;
+                kpiHtml += `<div class="border rounded-md p-4"><p class="font-semibold">${kpi.name}</p><p class="text-sm text-gray-500 mb-2">Target: ${kpi.target}</p><div class="flex items-center space-x-4"><span class="w-1/4">Bobot: ${kpi.bobot}</span><div class="w-3/4"><div class="flex items-center space-x-2"><input type="range" min="1" max="5" value="${savedValue}" step="0.1" class="w-full kpi-score-input" data-id="${kpi.id}" data-bobot="${parseFloat(kpi.bobot) / 100}" oninput="this.nextElementSibling.textContent = parseFloat(this.value).toFixed(1)"><span class="font-bold text-blue-600 w-10 text-center">${parseFloat(savedValue).toFixed(1)}</span></div></div></div></div>`;
+            });
+            let attitudeHtml = `<h3 class="text-xl font-bold text-gray-700 mt-8">Penilaian Sikap (Attitude) - Bobot 30%</h3>`;
+            attitudeKpis.forEach(kpi => {
+                const savedValue = savedScores.attitudeScores[kpi.id] || 3;
+                attitudeHtml += `<div class="border rounded-md p-4"><p class="font-semibold">${kpi.name}</p><p class="text-sm text-gray-500 mb-2">Deskripsi: ${kpi.target}</p><div class="flex items-center space-x-4"><span class="w-1/4">Bobot: ${kpi.bobot}</span><div class="w-3/4"><div class="flex items-center space-x-2"><input type="range" min="1" max="5" value="${savedValue}" step="0.1" class="w-full attitude-score-input" data-id="${kpi.id}" data-bobot="${parseFloat(kpi.bobot) / 100}" oninput="this.nextElementSibling.textContent = parseFloat(this.value).toFixed(1)"><span class="font-bold text-blue-600 w-10 text-center">${parseFloat(savedValue).toFixed(1)}</span></div></div></div></div>`;
+            });
+            kpiItemsContainer.innerHTML = kpiHtml + attitudeHtml;
+        }
+
+        function renderKaryawanTable() {
+            const tableBody = document.getElementById('karyawan-table-body');
+            const sampleDataContainer = document.getElementById('sample-data-container');
+            tableBody.innerHTML = '';
+            const filteredData = getFilteredData();
+            const totalEntries = filteredData.length;
+            const totalPages = Math.ceil(totalEntries / entriesPerPage);
+            if (currentPage > totalPages && totalPages > 0) { currentPage = totalPages; }
+            if (currentPage < 1) { currentPage = 1; }
+            const startIndex = (currentPage - 1) * entriesPerPage;
+            const endIndex = startIndex + entriesPerPage;
+            const dataToRender = filteredData.slice(startIndex, endIndex);
+            if (dataToRender.length === 0 && totalEntries > 0) {
+                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Tidak ada karyawan yang cocok.</td></tr>`;
+                 sampleDataContainer.classList.add('hidden');
+            } else if (totalEntries === 0) {
+                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Belum ada data karyawan.</td></tr>`;
+                 sampleDataContainer.classList.remove('hidden');
+            } else {
+                sampleDataContainer.classList.add('hidden');
+                dataToRender.forEach(k => {
+                    const statusClass = k.status === 'Sudah Dinilai' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                    const row = `<tr class="border-b hover:bg-gray-50"><td class="p-4">${k.nama}</td><td class="p-4 text-gray-600">${k.jabatan}</td><td class="p-4 text-gray-600">${k.departemen}</td><td class="p-4 text-gray-600">${k.branch || 'N/A'}</td><td class="p-4"><span class="px-3 py-1 text-sm font-medium rounded-full ${statusClass}">${k.status}</span></td><td class="p-4 text-center"><button onclick="window.app.showViewKaryawanModal('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1"><i data-lucide="eye"></i></button><button onclick="window.app.showEditKaryawanModal('${k.id}')" class="text-green-500 hover:text-green-700 p-1"><i data-lucide="file-pen-line"></i></button><button onclick="window.app.deleteKaryawan('${k.id}')" class="text-red-500 hover:text-red-700 p-1"><i data-lucide="trash-2"></i></button></td></tr>`;
+                    tableBody.innerHTML += row;
+                });
+                lucide.createIcons();
+            }
+            const paginationInfo = document.getElementById('pagination-info');
+            const startEntry = totalEntries > 0 ? startIndex + 1 : 0;
+            const endEntry = Math.min(endIndex, totalEntries);
+            paginationInfo.textContent = `Menampilkan ${startEntry} sampai ${endEntry} dari ${totalEntries} entri`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalEntries === 0;
+        }
+        
+        function populateYearDropdowns() {
+            const currentYear = new Date().getFullYear();
+            const years = [];
+            for (let i = 0; i <= 5; i++) {
+                years.push(currentYear + i);
+            }
+            for (let i = 1; i <= 2; i++) {
+                 years.unshift(currentYear - i);
+            }
+            
+            penilaianTahunSelect.innerHTML = '';
+            evaluasiTahunSelect.innerHTML = '';
+
+            years.sort().forEach(year => {
+                const option1 = document.createElement('option');
+                option1.value = year;
+                option1.textContent = year;
+                penilaianTahunSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = year;
+                option2.textContent = year;
+                evaluasiTahunSelect.appendChild(option2);
+            });
+
+            penilaianTahunSelect.value = currentYear;
+            evaluasiTahunSelect.value = new Date().getFullYear() + 1; // Default for 'Awal Tahun'
+        }
+
+        function exportToExcel() {
+            const dataToExport = getFilteredData();
+            if (dataToExport.length === 0) {
+                showToast("Tidak ada data untuk diekspor.", "error");
+                return;
+            }
+            const worksheetData = dataToExport.map(k => ({
+                'Nama Karyawan': k.nama,
+                'Jabatan': k.jabatan,
+                'Departemen': k.departemen,
+                'Branch': k.branch,
+                'Status': k.status,
+                'Skor Akhir': k.skor ? k.skor.toFixed(2) : 'N/A',
+                'Periode': k.periode,
+                'Tanggal Penilaian': k.tanggalPenilaian ? new Date(k.tanggalPenilaian).toLocaleDateString('id-ID') : 'N/A',
+                'Catatan': k.catatan
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Penilaian");
+            worksheet['!cols'] = [ { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 40 } ];
+            XLSX.writeFile(workbook, "Laporan_Penilaian_Karyawan.xlsx");
+            showToast("Data berhasil diekspor ke Excel.");
+        }
+
+        // --- Authentication Logic ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = e.target.email.value;
+            const password = e.target.password.value;
+            loginError.classList.add('hidden');
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch (error) { loginError.textContent = "Email atau password salah."; loginError.classList.remove('hidden'); }
+        });
+        logoutBtn.addEventListener('click', async () => { try { await signOut(auth); } catch (error) { console.error("Logout failed:", error); } });
+
+        // --- Authentication State and Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    loginScreen.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    showPage('dashboard');
+                    setupFirestoreListener(userId);
+                } else {
+                    userId = null;
+                    if (firestoreUnsubscribe) { firestoreUnsubscribe(); }
+                    karyawanData = [];
+                    appContainer.classList.add('hidden');
+                    loginScreen.classList.remove('hidden');
+                }
+                lucide.createIcons();
+            });
+            populateYearDropdowns();
+            entriesPerPageSelect.addEventListener('change', (e) => { entriesPerPage = parseInt(e.target.value, 10); currentPage = 1; renderKaryawanTable(); });
+            resetPenilaianForm();
+            document.getElementById('add-sample-data-btn').addEventListener('click', () => { if (userId) { addSampleData(userId); showToast("Data contoh berhasil ditambahkan."); } });
+            
+            filterBtn.addEventListener('click', () => { currentPage = 1; renderKaryawanTable(); });
+            resetFilterBtn.addEventListener('click', () => {
+                startDateInput.value = '';
+                endDateInput.value = '';
+                searchInput.value = '';
+                currentPage = 1;
+                renderKaryawanTable();
+            });
+            exportExcelBtn.addEventListener('click', exportToExcel);
+
+            evaluasiKaryawanInput.addEventListener('input', (e) => {
+                const enteredName = e.target.value;
+                const selectedKaryawan = karyawanData.find(k => k.nama === enteredName);
+                
+                if (selectedKaryawan) {
+                    currentlySelectedEvaluasiKaryawanId = selectedKaryawan.id;
+                    evaluasiHeaderDisplay.textContent = `Karyawan: ${selectedKaryawan.nama}`;
+                    loadEvaluasiDiriForm();
+                } else {
+                    currentlySelectedEvaluasiKaryawanId = null;
+                    evaluasiHeaderDisplay.textContent = `Pilih seorang karyawan`;
+                    clearEvaluasiDiriForm();
+                }
+            });
+
+            evaluasiTahunSelect.addEventListener('change', loadEvaluasiDiriForm);
+
+            simpanDraftBtn.addEventListener('click', async () => {
+                if (!currentlySelectedEvaluasiKaryawanId) {
+                    showToast("Silakan pilih karyawan terlebih dahulu.", "error");
+                    return;
+                }
+
+                const selectedYear = evaluasiTahunSelect.value;
+                const evaluasiData = {
+                    refleksi: document.getElementById('evaluasi-refleksi').value,
+                    sop: document.getElementById('evaluasi-sop').value,
+                    peralatan: document.getElementById('evaluasi-peralatan').value,
+                    customer: document.getElementById('evaluasi-customer').value,
+                    dokumentasi: document.getElementById('evaluasi-dokumentasi').value,
+                    laporan: document.getElementById('evaluasi-laporan').value,
+                };
+
+                const updatePayload = {};
+                updatePayload[`evaluasiDiri.${selectedYear}`] = evaluasiData;
+
+                await updateKaryawan(currentlySelectedEvaluasiKaryawanId, updatePayload);
+                showToast(`Draft untuk tahun ${selectedYear} berhasil disimpan.`, "success");
+            });
+
+            kirimEvaluasiBtn.addEventListener('click', () => {
+                if (!currentlySelectedEvaluasiKaryawanId) {
+                    showToast("Silakan pilih karyawan terlebih dahulu.", "error");
+                    return;
+                }
+                showWhatsappModal('evaluasi');
+            });
+
+            document.getElementById('whatsapp-share-btn').addEventListener('click', () => {
+                if (!currentlyViewedKaryawanId) return;
+                const karyawan = karyawanData.find(k => k.id === currentlyViewedKaryawanId);
+                if (!karyawan) return;
+                showWhatsappModal('penilaian');
+            });
+
+            whatsappForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                let message = '';
+                let phoneNumber = document.getElementById('whatsapp-phone-input').value;
+                phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+                if (phoneNumber.startsWith('0')) {
+                    phoneNumber = '62' + phoneNumber.substring(1);
+                }
+
+                if (whatsappMessageType === 'penilaian') {
+                    if (!currentlyViewedKaryawanId) return;
+                    const karyawan = karyawanData.find(k => k.id === currentlyViewedKaryawanId);
+                    if (!karyawan) return;
+                    
+                    message += `*Hasil Penilaian Kinerja*\n\n`;
+                    message += `Halo *${karyawan.nama}*,\n\n`;
+                    message += `Berikut hasil penilaian Anda untuk periode *${karyawan.periode || 'N/A'}*:\n\n`;
+                    message += `*Skor Akhir:* ${karyawan.skor ? karyawan.skor.toFixed(2) : 'N/A'}\n`;
+                    message += `*Catatan/Feedback:*\n`;
+                    message += `_${karyawan.catatan || 'Tidak ada catatan.'}_\n\n`;
+                    message += `Terima kasih.`;
+
+                } else if (whatsappMessageType === 'evaluasi') {
+                    if (!currentlySelectedEvaluasiKaryawanId) return;
+                    const karyawan = karyawanData.find(k => k.id === currentlySelectedEvaluasiKaryawanId);
+                    if (!karyawan) return;
+
+                    const evaluasiData = {
+                        refleksi: document.getElementById('evaluasi-refleksi').value,
+                        sop: document.getElementById('evaluasi-sop').value,
+                        peralatan: document.getElementById('evaluasi-peralatan').value,
+                        customer: document.getElementById('evaluasi-customer').value,
+                        dokumentasi: document.getElementById('evaluasi-dokumentasi').value,
+                        laporan: document.getElementById('evaluasi-laporan').value,
+                    };
+                    const selectedYear = evaluasiTahunSelect.value;
+
+                    message += `*Evaluasi Diri Karyawan*\n\n`;
+                    message += `*Nama:* ${karyawan.nama}\n`;
+                    message += `*Periode:* Awal Tahun ${selectedYear}\n\n`;
+                    message += `*1. Refleksi Diri:*\n${evaluasiData.refleksi || '-'}\n\n`;
+                    message += `*2. Kepatuhan SOP & Safety:*\n${evaluasiData.sop || '-'}\n\n`;
+                    message += `*3. Pemeliharaan Peralatan Kerja:*\n${evaluasiData.peralatan || '-'}\n\n`;
+                    message += `*4. Komunikasi dengan Customer:*\n${evaluasiData.customer || '-'}\n\n`;
+                    message += `*5. Dokumentasi Pekerjaan:*\n${evaluasiData.dokumentasi || '-'}\n\n`;
+                    message += `*6. Laporan & Administrasi:*\n${evaluasiData.laporan || '-'}\n\n`;
+                    message += `Mohon ditinjau lebih lanjut.`;
+                }
+
+                if (message) {
+                    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                }
+                
+                hideWhatsappModal();
+            });
+        });
+
+        function loadEvaluasiDiriForm() {
+            if (!currentlySelectedEvaluasiKaryawanId) {
+                clearEvaluasiDiriForm();
+                return;
+            };
+            const selectedKaryawan = karyawanData.find(k => k.id === currentlySelectedEvaluasiKaryawanId);
+            if (!selectedKaryawan) return;
+
+            const selectedYear = evaluasiTahunSelect.value;
+            const draft = selectedKaryawan.evaluasiDiri && selectedKaryawan.evaluasiDiri[selectedYear] ? selectedKaryawan.evaluasiDiri[selectedYear] : {};
+            
+            document.getElementById('evaluasi-refleksi').value = draft.refleksi || '';
+            document.getElementById('evaluasi-sop').value = draft.sop || '';
+            document.getElementById('evaluasi-peralatan').value = draft.peralatan || '';
+            document.getElementById('evaluasi-customer').value = draft.customer || '';
+            document.getElementById('evaluasi-dokumentasi').value = draft.dokumentasi || '';
+            document.getElementById('evaluasi-laporan').value = draft.laporan || '';
+        }
+
+        function clearEvaluasiDiriForm() {
+            const textareas = document.querySelectorAll('#evaluasi textarea');
+            textareas.forEach(ta => ta.value = '');
+        }
+    </script>
+</body>
+</html>
+
+
