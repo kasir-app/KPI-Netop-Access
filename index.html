@@ -82,9 +82,12 @@
 
     <!-- Main App Container -->
     <div id="app-container" class="hidden">
-        <div class="flex h-screen">
+        <div class="relative min-h-screen md:flex">
+            <!-- Mobile Overlay -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
+
             <!-- Sidebar Navigation -->
-            <nav class="w-64 bg-gray-800 text-white flex flex-col fixed h-full">
+            <nav id="sidebar" class="w-64 bg-gray-800 text-white flex flex-col fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-30">
                 <div class="p-4 border-b border-gray-700 flex items-center">
                     <i data-lucide="target" class="w-8 h-8 mr-3 text-blue-400"></i>
                     <h1 class="text-xl font-bold">KPI Netop Access</h1>
@@ -104,257 +107,268 @@
             </nav>
 
             <!-- Main Content -->
-            <main class="flex-1 ml-64 p-8 overflow-y-auto">
-                <!-- 1. Dashboard Utama Page -->
-                <div id="dashboard" class="page">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard Utama</h2>
-                    <!-- Summary Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-gray-500">Total Karyawan</p>
-                                <p id="total-karyawan" class="text-3xl font-bold text-gray-800">0</p>
+            <main class="flex-1 md:ml-64 transition-all duration-300 ease-in-out">
+                <!-- Mobile Header -->
+                <header class="md:hidden flex justify-between items-center p-4 bg-gray-800 text-white sticky top-0 z-10">
+                    <button id="menu-btn">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h2 id="mobile-header-title" class="text-lg font-bold">Dashboard Utama</h2>
+                    <div></div> <!-- Spacer -->
+                </header>
+
+                <div class="p-4 md:p-8">
+                    <!-- 1. Dashboard Utama Page -->
+                    <div id="dashboard" class="page">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-6 hidden md:block">Dashboard Utama</h2>
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Total Karyawan</p>
+                                    <p id="total-karyawan" class="text-3xl font-bold text-gray-800">0</p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-full">
+                                    <i data-lucide="users" class="w-6 h-6 text-blue-500"></i>
+                                </div>
                             </div>
-                            <div class="bg-blue-100 p-3 rounded-full">
-                                <i data-lucide="users" class="w-6 h-6 text-blue-500"></i>
+                            <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Sudah Dinilai</p>
+                                    <p id="sudah-dinilai" class="text-3xl font-bold text-gray-800">0</p>
+                                </div>
+                                 <div class="bg-green-100 p-3 rounded-full">
+                                    <i data-lucide="user-check" class="w-6 h-6 text-green-500"></i>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Belum Dinilai</p>
+                                    <p id="belum-dinilai" class="text-3xl font-bold text-gray-800">0</p>
+                                </div>
+                                 <div class="bg-yellow-100 p-3 rounded-full">
+                                    <i data-lucide="user-x" class="w-6 h-6 text-yellow-500"></i>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Performa Rata-rata</p>
+                                    <p id="performa-rata2" class="text-3xl font-bold text-gray-800">0.0</p>
+                                </div>
+                                 <div class="bg-indigo-100 p-3 rounded-full">
+                                    <i data-lucide="trending-up" class="w-6 h-6 text-indigo-500"></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-gray-500">Sudah Dinilai</p>
-                                <p id="sudah-dinilai" class="text-3xl font-bold text-gray-800">0</p>
+
+                        <!-- Charts -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="font-bold text-gray-700 mb-4">Distribusi Skor Kinerja</h3>
+                                <div class="relative h-80">
+                                    <canvas id="kinerjaChart"></canvas>
+                                </div>
                             </div>
-                             <div class="bg-green-100 p-3 rounded-full">
-                                <i data-lucide="user-check" class="w-6 h-6 text-green-500"></i>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-gray-500">Belum Dinilai</p>
-                                <p id="belum-dinilai" class="text-3xl font-bold text-gray-800">0</p>
-                            </div>
-                             <div class="bg-yellow-100 p-3 rounded-full">
-                                <i data-lucide="user-x" class="w-6 h-6 text-yellow-500"></i>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-gray-500">Performa Rata-rata</p>
-                                <p id="performa-rata2" class="text-3xl font-bold text-gray-800">0.0</p>
-                            </div>
-                             <div class="bg-indigo-100 p-3 rounded-full">
-                                <i data-lucide="trending-up" class="w-6 h-6 text-indigo-500"></i>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="font-bold text-gray-700 mb-4">Penyelesaian KPI per Departemen</h3>
+                                <div class="relative h-80">
+                                    <canvas id="departemenChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Charts -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="font-bold text-gray-700 mb-4">Distribusi Skor Kinerja</h3>
-                            <div class="relative h-80">
-                                <canvas id="kinerjaChart"></canvas>
+                    <!-- 2. Data Karyawan Page -->
+                    <div id="karyawan" class="page">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-6 hidden md:block">Data Karyawan</h2>
+                        
+                        <!-- Filter and Export Section -->
+                        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                <div>
+                                    <label for="start-date" class="block text-sm font-medium text-gray-700">Dari Tanggal Penilaian</label>
+                                    <input type="date" id="start-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                                    <input type="date" id="end-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="filter-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 w-full flex items-center justify-center"><i data-lucide="filter" class="w-4 h-4 mr-2"></i>Filter</button>
+                                    <button id="reset-filter-btn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 w-full flex items-center justify-center"><i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i>Reset</button>
+                                </div>
+                                <div>
+                                     <button id="export-excel-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 w-full flex items-center justify-center">
+                                        <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i>Export ke Excel
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="font-bold text-gray-700 mb-4">Penyelesaian KPI per Departemen</h3>
-                            <div class="relative h-80">
-                                <canvas id="departemenChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- 2. Data Karyawan Page -->
-                <div id="karyawan" class="page">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Data Karyawan</h2>
-                    
-                    <!-- Filter and Export Section -->
-                    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                            <div>
-                                <label for="start-date" class="block text-sm font-medium text-gray-700">Dari Tanggal Penilaian</label>
-                                <input type="date" id="start-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
-                                <input type="date" id="end-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div class="flex space-x-2">
-                                <button id="filter-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 w-full flex items-center justify-center"><i data-lucide="filter" class="w-4 h-4 mr-2"></i>Filter</button>
-                                <button id="reset-filter-btn" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 w-full flex items-center justify-center"><i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i>Reset</button>
-                            </div>
-                            <div>
-                                 <button id="export-excel-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 w-full flex items-center justify-center">
-                                    <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i>Export ke Excel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Container for Add Sample Data Button -->
-                    <div id="sample-data-container" class="mb-6 text-center hidden bg-white p-6 rounded-lg shadow-md border-2 border-dashed">
-                        <p class="text-gray-600 mb-4">Database Anda kosong. Mulai dengan menambahkan karyawan baru atau muat data contoh untuk demonstrasi.</p>
-                        <button id="add-sample-data-btn" class="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 flex items-center mx-auto">
-                            <i data-lucide="database" class="w-5 h-5 mr-2"></i> Tambahkan Data Contoh
-                        </button>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <div class="flex justify-between items-center mb-4">
-                            <input id="search-karyawan-input" type="text" placeholder="Cari karyawan..." class="border rounded-md p-2 w-1/3">
-                            <button onclick="window.app.showAddKaryawanModal()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center">
-                                <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Karyawan
+                        <!-- Container for Add Sample Data Button -->
+                        <div id="sample-data-container" class="mb-6 text-center hidden bg-white p-6 rounded-lg shadow-md border-2 border-dashed">
+                            <p class="text-gray-600 mb-4">Database Anda kosong. Mulai dengan menambahkan karyawan baru atau muat data contoh untuk demonstrasi.</p>
+                            <button id="add-sample-data-btn" class="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 flex items-center mx-auto">
+                                <i data-lucide="database" class="w-5 h-5 mr-2"></i> Tambahkan Data Contoh
                             </button>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="bg-gray-100 border-b">
-                                        <th class="p-4 font-semibold">Nama</th>
-                                        <th class="p-4 font-semibold">Jabatan</th>
-                                        <th class="p-4 font-semibold">Departemen</th>
-                                        <th class="p-4 font-semibold">Branch</th>
-                                        <th class="p-4 font-semibold">Status Penilaian</th>
-                                        <th class="p-4 font-semibold text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="karyawan-table-body">
-                                    <tr><td colspan="6" class="p-4 text-center text-gray-500">Menghubungkan ke database...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                         <!-- Pagination Footer -->
-                        <div id="karyawan-table-footer" class="flex justify-between items-center mt-4 pt-4 border-t">
-                            <div class="flex items-center space-x-2 text-sm text-gray-600">
-                                <span>Tampilkan</span>
-                                <select id="entries-per-page" class="border rounded-md p-1">
-                                    <option value="5">5</option>
-                                    <option value="10" selected>10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                                <span>entri</span>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                                <input id="search-karyawan-input" type="text" placeholder="Cari karyawan..." class="border rounded-md p-2 w-full md:w-1/3">
+                                <button onclick="window.app.showAddKaryawanModal()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center w-full md:w-auto justify-center">
+                                    <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Tambah Karyawan
+                                </button>
                             </div>
-                            <div id="pagination-info" class="text-sm text-gray-600">
-                                Menampilkan 0 sampai 0 dari 0 entri
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="bg-gray-100 border-b">
+                                            <th class="p-4 font-semibold">Nama</th>
+                                            <th class="p-4 font-semibold hidden md:table-cell">Jabatan</th>
+                                            <th class="p-4 font-semibold hidden md:table-cell">Departemen</th>
+                                            <th class="p-4 font-semibold hidden md:table-cell">Branch</th>
+                                            <th class="p-4 font-semibold">Status</th>
+                                            <th class="p-4 font-semibold text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="karyawan-table-body">
+                                        <tr><td colspan="6" class="p-4 text-center text-gray-500">Menghubungkan ke database...</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="flex space-x-2">
-                                <button id="prev-page-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Sebelumnya</button>
-                                <button id="next-page-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Berikutnya</button>
+                             <!-- Pagination Footer -->
+                            <div id="karyawan-table-footer" class="flex flex-col md:flex-row justify-between items-center mt-4 pt-4 border-t gap-4">
+                                <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                    <span>Tampilkan</span>
+                                    <select id="entries-per-page" class="border rounded-md p-1">
+                                        <option value="5">5</option>
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span>entri</span>
+                                </div>
+                                <div id="pagination-info" class="text-sm text-gray-600">
+                                    Menampilkan 0 sampai 0 dari 0 entri
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="prev-page-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Sebelumnya</button>
+                                    <button id="next-page-btn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Berikutnya</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 3. Form Penilaian Kinerja Page -->
-                <div id="penilaian" class="page">
-                     <h2 class="text-3xl font-bold text-gray-800 mb-6">Form Penilaian Kinerja</h2>
-                     <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
-                        <!-- Employee Info -->
-                        <div class="grid grid-cols-2 gap-6 border-b pb-6 mb-6">
-                             <div>
-                                 <label for="penilaian-pilih-karyawan-input" class="block text-sm font-medium text-gray-600">Ketik Nama Karyawan</label>
-                                 <input type="text" id="penilaian-pilih-karyawan-input" list="karyawan-list" placeholder="Ketik untuk mencari..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                 <datalist id="karyawan-list"></datalist>
-                                 <input type="hidden" id="selected-karyawan-id">
-                             </div>
-                             <div>
-                                 <p class="text-sm text-gray-600">Jabatan</p>
-                                 <p id="penilaian-jabatan" class="font-semibold text-lg text-gray-800">-</p>
-                             </div>
-                              <div>
-                                 <p class="text-sm text-gray-600">Departemen</p>
-                                 <p id="penilaian-departemen" class="font-semibold text-lg text-gray-800">-</p>
-                             </div>
-                             <div>
-                                 <label for="penilaian-tahun-select" class="block text-sm font-medium text-gray-600">Periode Penilaian</label>
-                                 <div class="flex items-center mt-1">
-                                    <span class="text-gray-700 mr-2">Akhir Tahun</span>
-                                    <select id="penilaian-tahun-select" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                    <!-- 3. Form Penilaian Kinerja Page -->
+                    <div id="penilaian" class="page">
+                         <h2 class="text-3xl font-bold text-gray-800 mb-6 hidden md:block">Form Penilaian Kinerja</h2>
+                         <div class="bg-white p-4 md:p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                            <!-- Employee Info -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-6 mb-6">
+                                 <div>
+                                     <label for="penilaian-pilih-karyawan-input" class="block text-sm font-medium text-gray-600">Ketik Nama Karyawan</label>
+                                     <input type="text" id="penilaian-pilih-karyawan-input" list="karyawan-list" placeholder="Ketik untuk mencari..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                     <datalist id="karyawan-list"></datalist>
+                                     <input type="hidden" id="selected-karyawan-id">
+                                 </div>
+                                 <div>
+                                     <p class="text-sm text-gray-600">Jabatan</p>
+                                     <p id="penilaian-jabatan" class="font-semibold text-lg text-gray-800">-</p>
+                                 </div>
+                                  <div>
+                                     <p class="text-sm text-gray-600">Departemen</p>
+                                     <p id="penilaian-departemen" class="font-semibold text-lg text-gray-800">-</p>
+                                 </div>
+                                 <div>
+                                     <label for="penilaian-tahun-select" class="block text-sm font-medium text-gray-600">Periode Penilaian</label>
+                                     <div class="flex items-center mt-1">
+                                        <span class="text-gray-700 mr-2">Akhir Tahun</span>
+                                        <select id="penilaian-tahun-select" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                                    </div>
+                                 </div>
+                            </div>
+
+                            <!-- KPI Items -->
+                            <div id="kpi-items-container" class="space-y-6">
+                                 <div class="text-center text-gray-500 p-8 border rounded-md">
+                                     Pilih karyawan untuk menampilkan daftar penilaian.
+                                 </div>
+                            </div>
+                            
+                            <!-- Summary & Comments -->
+                            <div class="mt-8 pt-6 border-t">
+                                <div class="flex justify-end items-center mb-6">
+                                    <span class="text-gray-600 mr-4">Total Skor Akhir:</span>
+                                    <span id="total-skor-akhir" class="text-3xl font-bold text-blue-600">0.00</span>
                                 </div>
-                             </div>
-                        </div>
-
-                        <!-- KPI Items -->
-                        <div id="kpi-items-container" class="space-y-6">
-                             <div class="text-center text-gray-500 p-8 border rounded-md">
-                                 Pilih karyawan untuk menampilkan daftar penilaian.
-                             </div>
-                        </div>
-                        
-                        <!-- Summary & Comments -->
-                        <div class="mt-8 pt-6 border-t">
-                            <div class="flex justify-end items-center mb-6">
-                                <span class="text-gray-600 mr-4">Total Skor Akhir:</span>
-                                <span id="total-skor-akhir" class="text-3xl font-bold text-blue-600">0.00</span>
+                                <div>
+                                     <label for="comments" class="block text-xl font-bold text-gray-700 mb-2">Catatan & Feedback Atasan</label>
+                                     <textarea id="comments" rows="4" class="w-full border border-gray-300 rounded-md p-2" placeholder="Tuliskan feedback konstruktif..."></textarea>
+                                </div>
                             </div>
-                            <div>
-                                 <label for="comments" class="block text-xl font-bold text-gray-700 mb-2">Catatan & Feedback Atasan</label>
-                                 <textarea id="comments" rows="4" class="w-full border border-gray-300 rounded-md p-2" placeholder="Tuliskan feedback konstruktif..."></textarea>
-                            </div>
-                        </div>
 
-                        <!-- Actions -->
-                        <div class="mt-8 flex justify-end space-x-4">
-                            <button id="batal-penilaian-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Batal</button>
-                            <button id="simpan-penilaian-btn" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">Simpan Penilaian</button>
-                        </div>
-                     </div>
-                </div>
-
-                <!-- 4. Rencana Kerja & Evaluasi Diri Page -->
-                <div id="evaluasi" class="page">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Evaluasi Diri</h2>
-                     <div class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
-                         <div class="border-b pb-4 mb-6">
-                            <div class="mb-4">
-                                 <label for="evaluasi-karyawan-input" class="block text-sm font-medium text-gray-600">Pilih Karyawan untuk Evaluasi Diri</label>
-                                 <input type="text" id="evaluasi-karyawan-input" list="evaluasi-karyawan-list" placeholder="Ketik nama karyawan..." class="mt-1 block w-full max-w-sm border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                 <datalist id="evaluasi-karyawan-list"></datalist>
+                            <!-- Actions -->
+                            <div class="mt-8 flex justify-end space-x-4">
+                                <button id="batal-penilaian-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Batal</button>
+                                <button id="simpan-penilaian-btn" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">Simpan Penilaian</button>
                             </div>
-                             <h3 id="evaluasi-header-display" class="text-xl font-bold text-gray-800">Pilih seorang karyawan</h3>
-                             <div class="flex items-center space-x-2 text-gray-600">
-                                <span>Periode: Awal Tahun</span>
-                                <select id="evaluasi-tahun-select" class="border rounded-md p-1 text-sm"></select>
-                             </div>
                          </div>
-                         
-                         <!-- Self Assessment Section -->
-                         <div class="space-y-6">
-                             <div>
-                                 <label for="evaluasi-refleksi" class="block text-md font-semibold text-gray-700">Refleksi Diri (Pencapaian, Tantangan, Pembelajaran)</label>
-                                 <textarea id="evaluasi-refleksi" rows="4" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan pencapaian, tantangan, dan pembelajaran Anda selama periode penilaian terakhir..."></textarea>
-                             </div>
-                             <div>
-                                 <label for="evaluasi-sop" class="block text-md font-semibold text-gray-700">Kepatuhan SOP & Safety</label>
-                                 <textarea id="evaluasi-sop" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan kepatuhan Anda terhadap SOP dan standar keselamatan kerja..."></textarea>
-                             </div>
-                             <div>
-                                 <label for="evaluasi-peralatan" class="block text-md font-semibold text-gray-700">Pemeliharaan Peralatan Kerja</label>
-                                 <textarea id="evaluasi-peralatan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan bagaimana Anda merawat dan memelihara peralatan kerja..."></textarea>
-                             </div>
-                             <div>
-                                 <label for="evaluasi-customer" class="block text-md font-semibold text-gray-700">Komunikasi dengan Customer</label>
-                                 <textarea id="evaluasi-customer" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan pendekatan komunikasi Anda dengan pelanggan..."></textarea>
-                             </div>
-                             <div>
-                                 <label for="evaluasi-dokumentasi" class="block text-md font-semibold text-gray-700">Dokumentasi Pekerjaan</label>
-                                 <textarea id="evaluasi-dokumentasi" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan bagaimana Anda mendokumentasikan pekerjaan Anda..."></textarea>
-                             </div>
-                             <div>
-                                 <label for="evaluasi-laporan" class="block text-md font-semibold text-gray-700">Laporan & Administrasi</label>
-                                 <textarea id="evaluasi-laporan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan ketepatan dan kualitas laporan serta tugas administrasi Anda..."></textarea>
-                             </div>
-                          </div>
+                    </div>
 
-                          <!-- Actions -->
-                        <div class="mt-8 pt-6 border-t flex justify-end space-x-4">
-                            <button id="simpan-draft-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Simpan Draft</button>
-                            <button id="kirim-evaluasi-btn" class="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600">Kirim ke Atasan</button>
-                        </div>
-                     </div>
+                    <!-- 4. Rencana Kerja & Evaluasi Diri Page -->
+                    <div id="evaluasi" class="page">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-6 hidden md:block">Evaluasi Diri</h2>
+                         <div class="bg-white p-4 md:p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                             <div class="border-b pb-4 mb-6">
+                                <div class="mb-4">
+                                     <label for="evaluasi-karyawan-input" class="block text-sm font-medium text-gray-600">Pilih Karyawan untuk Evaluasi Diri</label>
+                                     <input type="text" id="evaluasi-karyawan-input" list="evaluasi-karyawan-list" placeholder="Ketik nama karyawan..." class="mt-1 block w-full max-w-sm border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                     <datalist id="evaluasi-karyawan-list"></datalist>
+                                </div>
+                                 <h3 id="evaluasi-header-display" class="text-xl font-bold text-gray-800">Pilih seorang karyawan</h3>
+                                 <div class="flex items-center space-x-2 text-gray-600">
+                                    <span>Periode: Awal Tahun</span>
+                                    <select id="evaluasi-tahun-select" class="border rounded-md p-1 text-sm"></select>
+                                 </div>
+                             </div>
+                             
+                             <!-- Self Assessment Section -->
+                             <div class="space-y-6">
+                                 <div>
+                                     <label for="evaluasi-refleksi" class="block text-md font-semibold text-gray-700">Refleksi Diri (Pencapaian, Tantangan, Pembelajaran)</label>
+                                     <textarea id="evaluasi-refleksi" rows="4" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan pencapaian, tantangan, dan pembelajaran Anda selama periode penilaian terakhir..."></textarea>
+                                 </div>
+                                 <div>
+                                     <label for="evaluasi-sop" class="block text-md font-semibold text-gray-700">Kepatuhan SOP & Safety</label>
+                                     <textarea id="evaluasi-sop" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan kepatuhan Anda terhadap SOP dan standar keselamatan kerja..."></textarea>
+                                 </div>
+                                 <div>
+                                     <label for="evaluasi-peralatan" class="block text-md font-semibold text-gray-700">Pemeliharaan Peralatan Kerja</label>
+                                     <textarea id="evaluasi-peralatan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan bagaimana Anda merawat dan memelihara peralatan kerja..."></textarea>
+                                 </div>
+                                 <div>
+                                     <label for="evaluasi-customer" class="block text-md font-semibold text-gray-700">Komunikasi dengan Customer</label>
+                                     <textarea id="evaluasi-customer" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan pendekatan komunikasi Anda dengan pelanggan..."></textarea>
+                                 </div>
+                                 <div>
+                                     <label for="evaluasi-dokumentasi" class="block text-md font-semibold text-gray-700">Dokumentasi Pekerjaan</label>
+                                     <textarea id="evaluasi-dokumentasi" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan bagaimana Anda mendokumentasikan pekerjaan Anda..."></textarea>
+                                 </div>
+                                 <div>
+                                     <label for="evaluasi-laporan" class="block text-md font-semibold text-gray-700">Laporan & Administrasi</label>
+                                     <textarea id="evaluasi-laporan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan ketepatan dan kualitas laporan serta tugas administrasi Anda..."></textarea>
+                                 </div>
+                              </div>
+
+                              <!-- Actions -->
+                            <div class="mt-8 pt-6 border-t flex justify-end space-x-4">
+                                <button id="simpan-draft-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400">Simpan Draft</button>
+                                <button id="kirim-evaluasi-btn" class="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600">Kirim ke Atasan</button>
+                            </div>
+                         </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -581,14 +595,28 @@
         const filterBtn = document.getElementById('filter-btn');
         const resetFilterBtn = document.getElementById('reset-filter-btn');
         const exportExcelBtn = document.getElementById('export-excel-btn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileHeaderTitle = document.getElementById('mobile-header-title');
 
 
         // --- Page Navigation Logic ---
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
+            
+            const activeLink = document.querySelector(`.nav-link[onclick="window.app.showPage('${pageId}')"]`);
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelector(`.nav-link[onclick="window.app.showPage('${pageId}')"]`).classList.add('active');
+            activeLink.classList.add('active');
+
+            mobileHeaderTitle.textContent = activeLink.textContent;
+
+            // Close sidebar on mobile after navigation
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            }
         }
         window.app.showPage = showPage;
 
@@ -1034,7 +1062,7 @@
                 sampleDataContainer.classList.add('hidden');
                 dataToRender.forEach(k => {
                     const statusClass = k.status === 'Sudah Dinilai' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-                    const row = `<tr class="border-b hover:bg-gray-50"><td class="p-4">${k.nama}</td><td class="p-4 text-gray-600">${k.jabatan}</td><td class="p-4 text-gray-600">${k.departemen}</td><td class="p-4 text-gray-600">${k.branch || 'N/A'}</td><td class="p-4"><span class="px-3 py-1 text-sm font-medium rounded-full ${statusClass}">${k.status}</span></td><td class="p-4 text-center"><button onclick="window.app.showViewKaryawanModal('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1"><i data-lucide="eye"></i></button><button onclick="window.app.showEditKaryawanModal('${k.id}')" class="text-green-500 hover:text-green-700 p-1"><i data-lucide="file-pen-line"></i></button><button onclick="window.app.deleteKaryawan('${k.id}')" class="text-red-500 hover:text-red-700 p-1"><i data-lucide="trash-2"></i></button></td></tr>`;
+                    const row = `<tr class="border-b hover:bg-gray-50"><td class="p-4"><div class="font-bold">${k.nama}</div><div class="text-sm text-gray-500 md:hidden">${k.jabatan}</div></td><td class="p-4 text-gray-600 hidden md:table-cell">${k.jabatan}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.departemen}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.branch || 'N/A'}</td><td class="p-4"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${k.status}</span></td><td class="p-4 text-center"><button onclick="window.app.showViewKaryawanModal('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1"><i data-lucide="eye"></i></button><button onclick="window.app.showEditKaryawanModal('${k.id}')" class="text-green-500 hover:text-green-700 p-1"><i data-lucide="file-pen-line"></i></button><button onclick="window.app.deleteKaryawan('${k.id}')" class="text-red-500 hover:text-red-700 p-1"><i data-lucide="trash-2"></i></button></td></tr>`;
                     tableBody.innerHTML += row;
                 });
                 lucide.createIcons();
@@ -1130,6 +1158,17 @@
                 }
                 lucide.createIcons();
             });
+
+            // Mobile sidebar toggle
+            menuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+
             populateYearDropdowns();
             entriesPerPageSelect.addEventListener('change', (e) => { entriesPerPage = parseInt(e.target.value, 10); currentPage = 1; renderKaryawanTable(); });
             resetPenilaianForm();
@@ -1285,5 +1324,4 @@
     </script>
 </body>
 </html>
-
 
