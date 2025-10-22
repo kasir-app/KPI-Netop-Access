@@ -361,6 +361,10 @@
                                      <label for="evaluasi-laporan" class="block text-md font-semibold text-gray-700">Laporan & Administrasi</label>
                                      <textarea id="evaluasi-laporan" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan ketepatan dan kualitas laporan serta tugas administrasi Anda..."></textarea>
                                  </div>
+                                 <div>
+                                     <label for="evaluasi-rencana" class="block text-md font-semibold text-gray-700">Rencana Apa Yang Mau kamu Lakukan Untuk Perusahaan</label>
+                                     <textarea id="evaluasi-rencana" rows="3" class="mt-1 w-full border border-gray-300 rounded-md p-3" placeholder="Jelaskan rencana atau kontribusi yang ingin Anda berikan kepada perusahaan di tahun ini..."></textarea>
+                                 </div>
                               </div>
 
                               <!-- Actions -->
@@ -1234,6 +1238,7 @@
                     customer: document.getElementById('evaluasi-customer').value,
                     dokumentasi: document.getElementById('evaluasi-dokumentasi').value,
                     laporan: document.getElementById('evaluasi-laporan').value,
+                    rencana: document.getElementById('evaluasi-rencana').value,
                 };
 
                 const updatePayload = {};
@@ -1293,6 +1298,7 @@
                         customer: document.getElementById('evaluasi-customer').value,
                         dokumentasi: document.getElementById('evaluasi-dokumentasi').value,
                         laporan: document.getElementById('evaluasi-laporan').value,
+                        rencana: document.getElementById('evaluasi-rencana').value,
                     };
                     const selectedYear = evaluasiTahunSelect.value;
 
@@ -1305,6 +1311,7 @@
                     message += `*4. Komunikasi dengan Customer:*\n${evaluasiData.customer || '-'}\n\n`;
                     message += `*5. Dokumentasi Pekerjaan:*\n${evaluasiData.dokumentasi || '-'}\n\n`;
                     message += `*6. Laporan & Administrasi:*\n${evaluasiData.laporan || '-'}\n\n`;
+                    message += `*7. Rencana Untuk Perusahaan:*\n${evaluasiData.rencana || '-'}\n\n`;
                     message += `Mohon ditinjau lebih lanjut.`;
                 }
 
@@ -1334,6 +1341,7 @@
             document.getElementById('evaluasi-customer').value = draft.customer || '';
             document.getElementById('evaluasi-dokumentasi').value = draft.dokumentasi || '';
             document.getElementById('evaluasi-laporan').value = draft.laporan || '';
+            document.getElementById('evaluasi-rencana').value = draft.rencana || '';
         }
 
         function clearEvaluasiDiriForm() {
