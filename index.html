@@ -225,6 +225,7 @@
                                     <thead>
                                         <tr class="bg-gray-100 border-b">
                                             <th class="p-4 font-semibold">Nama</th>
+                                            <th class="p-4 font-semibold hidden md:table-cell">NIK</th>
                                             <th class="p-4 font-semibold hidden md:table-cell">Jabatan</th>
                                             <th class="p-4 font-semibold hidden md:table-cell">Departemen</th>
                                             <th class="p-4 font-semibold hidden md:table-cell">Branch</th>
@@ -233,7 +234,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="karyawan-table-body">
-                                        <tr><td colspan="6" class="p-4 text-center text-gray-500">Menghubungkan ke database...</td></tr>
+                                        <tr><td colspan="7" class="p-4 text-center text-gray-500">Menghubungkan ke database...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -398,6 +399,10 @@
                         <label for="nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
                         <input type="text" id="nama" name="nama" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
+                     <div>
+                        <label for="nik" class="block text-sm font-medium text-gray-700">NIK Karyawan</label>
+                        <input type="text" id="nik" name="nik" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                     <div>
                         <label for="jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
                         <input type="text" id="jabatan" name="jabatan" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
@@ -429,6 +434,10 @@
                     <div>
                         <label for="edit-nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
                         <input type="text" id="edit-nama" name="nama" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                     <div>
+                        <label for="edit-nik" class="block text-sm font-medium text-gray-700">NIK Karyawan</label>
+                        <input type="text" id="edit-nik" name="nik" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label for="edit-jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
@@ -462,6 +471,10 @@
                 <div>
                     <p class="text-sm text-gray-500">Nama Lengkap</p>
                     <p id="view-nama" class="font-semibold text-lg"></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">NIK</p>
+                    <p id="view-nik" class="font-semibold text-lg"></p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Jabatan</p>
@@ -669,6 +682,7 @@
             if (!karyawan) return;
             document.getElementById('edit-karyawan-id').value = id;
             document.getElementById('edit-nama').value = karyawan.nama;
+            document.getElementById('edit-nik').value = karyawan.nik;
             document.getElementById('edit-jabatan').value = karyawan.jabatan;
             document.getElementById('edit-departemen').value = karyawan.departemen;
             document.getElementById('edit-branch').value = karyawan.branch;
@@ -683,6 +697,7 @@
             const karyawan = karyawanData.find(k => k.id === id);
             if (!karyawan) return;
             document.getElementById('view-nama').textContent = karyawan.nama;
+            document.getElementById('view-nik').textContent = karyawan.nik || 'N/A';
             document.getElementById('view-jabatan').textContent = karyawan.jabatan;
             document.getElementById('view-departemen').textContent = karyawan.departemen;
             document.getElementById('view-branch').textContent = karyawan.branch || 'N/A';
@@ -732,6 +747,7 @@
             e.preventDefault();
             const newKaryawan = {
                 nama: e.target.nama.value,
+                nik: e.target.nik.value,
                 jabatan: e.target.jabatan.value,
                 departemen: e.target.departemen.value,
                 branch: e.target.branch.value,
@@ -747,6 +763,7 @@
             const id = document.getElementById('edit-karyawan-id').value;
             const updatedData = {
                 nama: document.getElementById('edit-nama').value,
+                nik: document.getElementById('edit-nik').value,
                 jabatan: document.getElementById('edit-jabatan').value,
                 departemen: document.getElementById('edit-departemen').value,
                 branch: document.getElementById('edit-branch').value,
@@ -870,6 +887,7 @@
             if (searchTerm) {
                 filtered = filtered.filter(k =>
                     k.nama.toLowerCase().includes(searchTerm) ||
+                    (k.nik && k.nik.toLowerCase().includes(searchTerm)) ||
                     k.jabatan.toLowerCase().includes(searchTerm) ||
                     k.departemen.toLowerCase().includes(searchTerm) ||
                     (k.branch && k.branch.toLowerCase().includes(searchTerm))
@@ -906,7 +924,7 @@
             }, (error) => {
                 console.error("Error listening to collection:", error);
                 const tableBody = document.getElementById('karyawan-table-body');
-                if(tableBody) { tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-600 font-semibold">Gagal memuat data. <br><span class="text-sm font-normal text-gray-600">Pastikan aturan keamanan Firestore valid. (Error: ${error.code})</span></td></tr>`; }
+                if(tableBody) { tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-600 font-semibold">Gagal memuat data. <br><span class="text-sm font-normal text-gray-600">Pastikan aturan keamanan Firestore valid. (Error: ${error.code})</span></td></tr>`; }
                 document.getElementById('total-karyawan').textContent = 'N/A';
                 document.getElementById('sudah-dinilai').textContent = 'N/A';
                 document.getElementById('belum-dinilai').textContent = 'N/A';
@@ -937,13 +955,13 @@
         
         async function addSampleData(uid) {
             const sampleData = [
-                { nama: 'Budi Santoso', jabatan: 'UI/UX Designer', departemen: 'Teknologi', branch: 'Jakarta', status: 'Sudah Dinilai', skor: 4.55, periode: 'Akhir Tahun 2024', catatan: 'Desain yang dihasilkan sangat memuaskan dan melebihi ekspektasi.' },
-                { nama: 'Citra Lestari', jabatan: 'Frontend Developer', departemen: 'Teknologi', branch: 'Bandung', status: 'Sudah Dinilai', skor: 4.20, periode: 'Akhir Tahun 2024', catatan: 'Pengerjaan cepat dan kode yang dihasilkan bersih.' },
-                { nama: 'Doni Firmansyah', jabatan: 'Backend Developer', departemen: 'Teknologi', branch: 'Jakarta', status: 'Belum Dinilai', skor: 0 },
-                { nama: 'Eka Wijayanti', jabatan: 'Product Manager', departemen: 'Produk', branch: 'Surabaya', status: 'Sudah Dinilai', skor: 4.80, periode: 'Akhir Tahun 2024', catatan: 'Sangat baik dalam mengelola prioritas dan komunikasi tim.' },
-                { nama: 'Fitri Handayani', jabatan: 'Marketing Specialist', departemen: 'Marketing', branch: 'Bandung', status: 'Belum Dinilai', skor: 0 },
-                { nama: 'Gita Permata', jabatan: 'Content Creator', departemen: 'Marketing', branch: 'Jakarta', status: 'Belum Dinilai', skor: 0 },
-                { nama: 'Hendra Gunawan', jabatan: 'HR Generalist', departemen: 'HR', branch: 'Surabaya', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Budi Santoso', nik: '123456001', jabatan: 'UI/UX Designer', departemen: 'Teknologi', branch: 'Jakarta', status: 'Sudah Dinilai', skor: 4.55, periode: 'Akhir Tahun 2024', catatan: 'Desain yang dihasilkan sangat memuaskan dan melebihi ekspektasi.' },
+                { nama: 'Citra Lestari', nik: '123456002', jabatan: 'Frontend Developer', departemen: 'Teknologi', branch: 'Bandung', status: 'Sudah Dinilai', skor: 4.20, periode: 'Akhir Tahun 2024', catatan: 'Pengerjaan cepat dan kode yang dihasilkan bersih.' },
+                { nama: 'Doni Firmansyah', nik: '123456003', jabatan: 'Backend Developer', departemen: 'Teknologi', branch: 'Jakarta', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Eka Wijayanti', nik: '123456004', jabatan: 'Product Manager', departemen: 'Produk', branch: 'Surabaya', status: 'Sudah Dinilai', skor: 4.80, periode: 'Akhir Tahun 2024', catatan: 'Sangat baik dalam mengelola prioritas dan komunikasi tim.' },
+                { nama: 'Fitri Handayani', nik: '123456005', jabatan: 'Marketing Specialist', departemen: 'Marketing', branch: 'Bandung', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Gita Permata', nik: '123456006', jabatan: 'Content Creator', departemen: 'Marketing', branch: 'Jakarta', status: 'Belum Dinilai', skor: 0 },
+                { nama: 'Hendra Gunawan', nik: '123456007', jabatan: 'HR Generalist', departemen: 'HR', branch: 'Surabaya', status: 'Belum Dinilai', skor: 0 },
             ];
             const karyawanCollectionPath = `/artifacts/${appId}/users/${uid}/karyawan`;
             for (const data of sampleData) { await addDoc(collection(db, karyawanCollectionPath), data); }
@@ -1053,16 +1071,16 @@
             const endIndex = startIndex + entriesPerPage;
             const dataToRender = filteredData.slice(startIndex, endIndex);
             if (dataToRender.length === 0 && totalEntries > 0) {
-                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Tidak ada karyawan yang cocok.</td></tr>`;
+                 tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Tidak ada karyawan yang cocok.</td></tr>`;
                  sampleDataContainer.classList.add('hidden');
             } else if (totalEntries === 0) {
-                 tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Belum ada data karyawan.</td></tr>`;
+                 tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Belum ada data karyawan.</td></tr>`;
                  sampleDataContainer.classList.remove('hidden');
             } else {
                 sampleDataContainer.classList.add('hidden');
                 dataToRender.forEach(k => {
                     const statusClass = k.status === 'Sudah Dinilai' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
-                    const row = `<tr class="border-b hover:bg-gray-50"><td class="p-4"><div class="font-bold">${k.nama}</div><div class="text-sm text-gray-500 md:hidden">${k.jabatan}</div></td><td class="p-4 text-gray-600 hidden md:table-cell">${k.jabatan}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.departemen}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.branch || 'N/A'}</td><td class="p-4"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${k.status}</span></td><td class="p-4 text-center"><button onclick="window.app.showViewKaryawanModal('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1"><i data-lucide="eye"></i></button><button onclick="window.app.showEditKaryawanModal('${k.id}')" class="text-green-500 hover:text-green-700 p-1"><i data-lucide="file-pen-line"></i></button><button onclick="window.app.deleteKaryawan('${k.id}')" class="text-red-500 hover:text-red-700 p-1"><i data-lucide="trash-2"></i></button></td></tr>`;
+                    const row = `<tr class="border-b hover:bg-gray-50"><td class="p-4"><div class="font-bold">${k.nama}</div><div class="text-sm text-gray-500 md:hidden">${k.nik || ''}</div></td><td class="p-4 text-gray-600 hidden md:table-cell">${k.nik || ''}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.jabatan}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.departemen}</td><td class="p-4 text-gray-600 hidden md:table-cell">${k.branch || 'N/A'}</td><td class="p-4"><span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${k.status}</span></td><td class="p-4 text-center"><button onclick="window.app.showViewKaryawanModal('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1"><i data-lucide="eye"></i></button><button onclick="window.app.showEditKaryawanModal('${k.id}')" class="text-green-500 hover:text-green-700 p-1"><i data-lucide="file-pen-line"></i></button><button onclick="window.app.deleteKaryawan('${k.id}')" class="text-red-500 hover:text-red-700 p-1"><i data-lucide="trash-2"></i></button></td></tr>`;
                     tableBody.innerHTML += row;
                 });
                 lucide.createIcons();
@@ -1112,6 +1130,7 @@
             }
             const worksheetData = dataToExport.map(k => ({
                 'Nama Karyawan': k.nama,
+                'NIK': k.nik,
                 'Jabatan': k.jabatan,
                 'Departemen': k.departemen,
                 'Branch': k.branch,
@@ -1124,7 +1143,7 @@
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Data Penilaian");
-            worksheet['!cols'] = [ { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 40 } ];
+            worksheet['!cols'] = [ { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 40 } ];
             XLSX.writeFile(workbook, "Laporan_Penilaian_Karyawan.xlsx");
             showToast("Data berhasil diekspor ke Excel.");
         }
